@@ -1,5 +1,7 @@
 <RCC>
 	<qresource prefix="/">
 		<file>main.qml</file>
+		<file>Colon.qml</file>
+		<file>Gistogramm.qml</file>
 	</qresource>
 </RCC>

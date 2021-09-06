@@ -11,9 +11,15 @@ Window {
 	color: "white"
 
 	Rectangle {
-		width: 30
-		height: 20
-		color: "blue"
+		width: parent.width - 10
+		height: parent.height - 10
+		color: "#fcf5e0"
 		anchors.centerIn: parent
+
+		Gistogramm {
+			anchors.fill: parent
+			max_value: 15
+			model: 15
+		}
 	}
 }
