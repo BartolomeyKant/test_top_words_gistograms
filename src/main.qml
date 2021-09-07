@@ -32,8 +32,19 @@ Window {
 			Progress {
 				id: progress
 				width: parent.width
-				height: 20
+				height: visible?20: 0
 				percent: TopWordList.curr_progress
+				visible: false
+
+				Connections {
+					target: TopWordList
+					function onLoad_start() {
+						progress.visible = true;
+					}
+					function onLoad_end() {
+						progress.visible = false;
+					}
+				}
 			}
 		}
 
