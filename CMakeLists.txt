@@ -16,6 +16,7 @@ add_executable(
 	src/res.qrc
 )
 
+target_include_directories(top_words PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(top_words
   PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QMLLDebug>)
 target_link_libraries(top_words
