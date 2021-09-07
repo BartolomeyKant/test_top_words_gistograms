@@ -1,12 +1,14 @@
 import QtQuick 2.0
 import QtQuick.Window 2.0
 
+import org.bulsandhoofs.topwordlist 0.1
+
 Window {
 	id: root_window
 
 	visible: true
-	minimumHeight: 200
-	minimumWidth: 300
+	minimumHeight: 600
+	minimumWidth: 800
 
 	color: "white"
 
@@ -18,8 +20,8 @@ Window {
 
 		Gistogramm {
 			anchors.fill: parent
-			max_value: 15
-			model: 15
+			max_value: TopWordList.max_value
+			model: TopWordList
 		}
 	}
 }

@@ -5,6 +5,7 @@ Item {
 
 	// значение отображаемое на гистограмме
 	property int value
+	property string lable
 	property int max_value
 
 	// цвет гистограммы
@@ -47,7 +48,7 @@ Item {
 
 		// высота отображаемой колонки определяется как процент от маскимальноый высоты
 		height:  parent.height * root._height_percent
-		
+
 		color: root._back_color
 		// для отображения интерактивности добавляем
 		border.color: root._pressed ? root._pressed_color : root._hovered_color
@@ -59,6 +60,11 @@ Item {
 				return 4
 			}
 			return 0
+		}
+
+		Text {
+			anchors.centerIn: parent
+			text: root.lable + "\n" + root.value
 		}
 	}
 }

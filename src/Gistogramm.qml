@@ -25,7 +25,8 @@ Item {
 				width: root._colon_width
 				height: parent.height
 				max_value: root.max_value
-				value: 10
+				value: data_model.count
+				lable: data_model.word
 				color: "#00ff00"
 			}
 		}
