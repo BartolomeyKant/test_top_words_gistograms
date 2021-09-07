@@ -3,5 +3,6 @@
 		<file>main.qml</file>
 		<file>Colon.qml</file>
 		<file>Gistogramm.qml</file>
+		<file>Progress.qml</file>
 	</qresource>
 </RCC>
