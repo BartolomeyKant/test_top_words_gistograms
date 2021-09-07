@@ -11,6 +11,8 @@ find_package(Qt5 COMPONENTS Core Quick REQUIRED)
 add_executable(
 	top_words
 	src/main.cpp
+	src/top_words.cpp
+	src/top_words_list.cpp
 	src/res.qrc
 )
 
