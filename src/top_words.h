@@ -11,7 +11,7 @@
 struct word_stat
 {
 	QString word;
-	uint count;
+	uint count = 0;
 };
 
 /**
@@ -22,8 +22,8 @@ class TopWords : public QObject
 	Q_OBJECT
 
 signals:
-	void file_loaded(uint size);
-	void chank_readed(uint size);
+	void file_loaded(qint64 size);
+	void chank_readed(qint64 size);
 	void read_end();
 	void stat_updated(const word_stat *word);
 

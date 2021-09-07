@@ -3,14 +3,33 @@
 #include <QFile>
 #include <QRegularExpression>
 #include <stdexcept>
+#include <QThread>
+#include <QDebug>
+#include <math.h>
 
 TopWords::TopWords(const QString &file, QObject *parent) : QObject(parent)
 {
 	_file = file;
 }
 
+/**
+ * Object for slow solving
+*/
+struct slower {
+	slower(qint64 size) {
+		time = 15 + log(size);
+	}
+
+	void slow() {
+		QThread::msleep(time);
+	}
+
+	qint64 time;
+};
+
 void TopWords::solve()
 {
+	qDebug() << "start solve";
 	QFile f(_file);
 
 	f.open(QFile::ReadOnly);
@@ -20,6 +39,7 @@ void TopWords::solve()
 								 f.errorString().toStdString());
 	}
 	emit file_loaded(f.size());
+	slower s(f.size());
 
 	QRegularExpression re(R"([^a-zA-zа-яА-яёЁ]+)");
 	QString sbuf;
@@ -37,6 +57,9 @@ void TopWords::solve()
 		}
 		for (auto &w : words)
 		{
+			if (w.isEmpty()) {
+				continue;
+			}
 			auto &s = _words[w];
 			if (s.word.isEmpty())
 			{
@@ -46,6 +69,7 @@ void TopWords::solve()
 			emit stat_updated(&s);
 		}
 		emit chank_readed(buf.size());
+		s.slow();
 	}
 	f.close();
 	emit read_end();
