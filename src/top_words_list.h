@@ -57,14 +57,15 @@ public slots:
 	void read_file_end();
 
 private:
+	void update_min();
 	// Список указателей на слова
-	// NOTE! хранить сырые указатели не хорошо
 	QList<word_stat> _list;
 	static constexpr uint SIZE = 15;
-	uint64_t _max_size;
-	uint64_t _read_size;
-	float _curr_progress;
-	uint64_t _max_value;
+	uint64_t _max_size = 0;
+	uint64_t _read_size = 0;
+	float _curr_progress = 0;
+	uint64_t _max_value = 0;
+	uint64_t _min_value = 0;
 };
 
 #endif /*TOP_WORDS_LIST_H*/
