@@ -30,31 +30,29 @@ void TopWordsList::read_file_begin(qint64 size)
 
 	_max_size = size;
 	_read_size = 0;
-	_curr_percent = 0;
+	_curr_progress = 0;
 	emit load_start();
 }
 
 void TopWordsList::read_chank(qint64 size)
 {
 	_read_size += size;
-	auto prev = _curr_percent;
-	_curr_percent = size / _max_size;
+	auto prev = _curr_progress;
+	_curr_progress = static_cast<float>(_read_size) /static_cast<float>( _max_size);
 
-	if (_curr_percent > prev)
+	if (_curr_progress > prev)
 	{
-		emit progress_updated(_curr_percent);
+		emit curr_progress_changed(_curr_progress);
 	}
 }
 
 void TopWordsList::update_stat(const word_stat *s)
 {
-	qDebug() << "update stat" << s->word << s->count << _list.size();
 	// обновляем максимальное значение
 	if (_max_value < s->count)
 	{
 		_max_value = s->count;
 		emit max_value_changed(_max_value);
-		qDebug() << "max_size" << _max_value;
 	}
 
 	// найти место для добавления нового word_stat
@@ -65,7 +63,6 @@ void TopWordsList::update_stat(const word_stat *s)
 	{
 		if (new_pos == _list.size() && s->count > i.count)
 		{
-			qDebug() << s->word << s->count << i.word;
 			new_pos = index;
 		}
 		if (i.word == s->word)
@@ -77,7 +74,6 @@ void TopWordsList::update_stat(const word_stat *s)
 		}
 		index++;
 	}
-	qDebug() << "new" << new_pos << "old" << old_pos;
 
 	// добавить новый в список
 	if (old_pos < 0)
@@ -102,7 +98,6 @@ void TopWordsList::update_stat(const word_stat *s)
 			// Вставляем элемент в новую позицию, сдвигая остальные вправо
 			word_stat new_s = *s;
 			word_stat tmp;
-			qDebug() << "new pos " << new_pos << "size" << _list.size();
 			for (int i = new_pos; i <= old_pos; i++)
 			{
 				tmp = _list[i];
@@ -124,7 +119,7 @@ void TopWordsList::update_stat(const word_stat *s)
 
 void TopWordsList::read_file_end()
 {
-	_curr_percent = 100;
-	emit progress_updated(_curr_percent);
+	_curr_progress = 1;
+	emit curr_progress_changed(_curr_progress);
 	emit load_end();
 }

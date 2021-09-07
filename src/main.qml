@@ -18,10 +18,24 @@ Window {
 		color: "#fcf5e0"
 		anchors.centerIn: parent
 
-		Gistogramm {
+		Column {
 			anchors.fill: parent
-			max_value: TopWordList.max_value
-			model: TopWordList
+			spacing: 10
+
+			Gistogramm {
+				width: parent.width
+				height: parent.height - progress.height
+				max_value: TopWordList.max_value
+				model: TopWordList
+			}
+
+			Progress {
+				id: progress
+				width: parent.width
+				height: 20
+				percent: TopWordList.curr_progress
+			}
 		}
+
 	}
 }

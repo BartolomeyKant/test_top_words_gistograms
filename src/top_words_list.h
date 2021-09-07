@@ -32,11 +32,12 @@ class TopWordsList : public QAbstractListModel
 {
 	Q_OBJECT
 	Q_PROPERTY(uint max_value READ max_value NOTIFY max_value_changed)
+	Q_PROPERTY(float curr_progress READ curr_progress NOTIFY curr_progress_changed)
 
 signals:
 	void load_end();
 	void load_start();
-	void progress_updated(uint percent);
+	void curr_progress_changed(float percent);
 	void max_value_changed(uint64_t value);
 
 public:
@@ -47,6 +48,7 @@ public:
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
 
 	uint max_value() const { return _max_value; }
+	float curr_progress() const { return _curr_progress; }
 
 public slots:
 	void read_file_begin(qint64 size);
@@ -61,7 +63,7 @@ private:
 	static constexpr uint SIZE = 15;
 	uint64_t _max_size;
 	uint64_t _read_size;
-	uint _curr_percent;
+	float _curr_progress;
 	uint64_t _max_value;
 };
 
