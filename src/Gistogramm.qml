@@ -16,7 +16,7 @@ Item {
 
 		anchors.fill: parent
 
-		spacing: 5
+		spacing: (parent.width/(rep.count - 1))*0.1
 
 		Repeater {
 			id: rep

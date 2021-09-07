@@ -40,25 +40,19 @@ Item {
 	Rectangle {
 		id: colon_rect
 
-		anchors.horizontalCenter: parent.horizontalCenter
 		anchors.bottom: parent.bottom
 		anchors.left: parent.left
 		anchors.right: parent.right
-		anchors.margins: 5
+		anchors.margins: parent.width * 0.01
 
 		// высота отображаемой колонки определяется как процент от маскимальноый высоты
-		height: {
-			var r = parent.height * root._height_percent
-			console.log(parent.height, r)
-			return r
-		}
-
+		height:  parent.height * root._height_percent
+		
 		color: root._back_color
 		// для отображения интерактивности добавляем
 		border.color: root._pressed ? root._pressed_color : root._hovered_color
 		border.width: {
 			if (root._pressed) {
-				console.log("rect height", height)
 				return 2
 			}
 			else if (root._hovered) {
