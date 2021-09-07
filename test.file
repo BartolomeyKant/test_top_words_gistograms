@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ru"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Пишем свой std::function (boost::function) / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="test_files/chunk-vendors.css" as="style"><link rel="preload" href="test_files/chunk-vendors.js" as="script"><link rel="preload" href="test_files/app.css" as="style"><link rel="preload" href="test_files/app.js" as="script"><link rel="preload" href="test_files/chunk-f458c7c4.css" as="style"><link rel="preload" href="test_files/chunk-f458c7c4.js" as="script">
+  <link rel="stylesheet" href="test_files/chunk-vendors.css"><link rel="stylesheet" href="test_files/app.css"><link rel="stylesheet" href="test_files/chunk-f458c7c4.css">
+  <script type="text/javascript" async="" src="test_files/js.js"></script><script async="" src="test_files/tag.js"></script><script async="" src="test_files/analytics.js"></script><script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.b855418be477fd58da22f8d523e09bfc.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="test_files/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/159389\/"},"headline":"Пишем свой std::function (boost::function)","datePublished":"2012-11-20T18:55:12+04:00","dateModified":"2012-11-22T10:04:05+04:00","author":{"@type":"Person","name":"Алексей Кутумов"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Классы std::function и boost::function являются высокоуровневыми обертками над функциями и функциональными объектами. Объекты таких классов позволяют хранить и в...","url":"https:\/\/habr.com\/ru\/post\/159389\/#post-content-body","about":["h_programming","h_cpp","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/159389\/d2971e51b857a19dd14849bf506c7cfe\/"]}</script>
+  <script src="test_files/gpt.js" async=""></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.46.0">
+  <meta name="csrf-token" content="HUZ0qeHF-JmoAXRnZr4Trwyyyv8NGO3mDQ3I">
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Пишем свой std::function (boost::function)" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Пишем свой std::function (boost::function)" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Пишем свой std::function (boost::function)" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Классы std::function и boost::function являются высокоуровневыми обертками над функциями и функциональными объектами. Объекты таких классов позволяют хранить и вызывать функции и функторы с заданной..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Классы std::function и boost::function являются высокоуровневыми обертками над функциями и функциональными объектами. Объекты таких классов позволяют хранить и вызывать функции и функторы с заданной..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Классы std::function и boost::function являются высокоуровневыми обертками над функциями и функциональными объектами. Объекты таких классов позволяют хранить и вызывать функции и функторы с заданной..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Классы std::function и boost::function являются высокоуровневыми обертками над функциями и функциональными объектами. Объекты таких классов позволяют хранить и вызывать функции и функторы с заданной..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Классы std::function и boost::function являются высокоуровневыми обертками над функциями и функциональными объектами. Объекты таких классов позволяют хранить и вызывать функции и функторы с заданной..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/159389/d2971e51b857a19dd14849bf506c7cfe/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/159389/d2971e51b857a19dd14849bf506c7cfe/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/159389/d2971e51b857a19dd14849bf506c7cfe/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/159389/d2971e51b857a19dd14849bf506c7cfe/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/159389/d2971e51b857a19dd14849bf506c7cfe/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="159389" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2012-11-20T14:55:12.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/159389/?fl=en%2Cru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/159389/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/159389/d2971e51b857a19dd14849bf506c7cfe/" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="shortcut icon" type="image/png" sizes="16x16" href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png">
+  <link rel="shortcut icon" type="image/png" sizes="32x32" href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png">
+  <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png">
+  <link rel="apple-touch-icon" type="image/png" sizes="120x120" href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png">
+  <link rel="apple-touch-icon" type="image/png" sizes="152x152" href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png">
+  <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png">
+  <link rel="apple-touch-icon" type="image/png" sizes="256x256" href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png">
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png">
+  <link rel="mask-icon" color="#77a2b6" href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg">
+  <link crossorigin="use-credentials" href="https://habr.com/manifest.webmanifest" rel="manifest">
+<script charset="utf-8" src="test_files/chunk-2d0e544c.js"></script><meta http-equiv="origin-trial" content="A88otRz1Fd3Nt567e2IYshC18LL3KGVXpVJW9oTCId4RYaygt23pbb4JqrbdIO/bwZPWEmRjBIRBu/bZbDR7Pg4AAABueyJvcmlnaW4iOiJodHRwczovL2ltYXNkay5nb29nbGVhcGlzLmNvbTo0NDMiLCJmZWF0dXJlIjoiVHJ1c3RUb2tlbnMiLCJleHBpcnkiOjE2MzQwODMxOTksImlzVGhpcmRQYXJ0eSI6dHJ1ZX0="><meta http-equiv="origin-trial" content="A0gCLbXCcL0R1Oc8tFPDs0G4Elz17w3zHp+Zst66+D17veE2o7fUcPsA114QtSTRqfVJLMeTSdeWOom0CcyCsgYAAAB7eyJvcmlnaW4iOiJodHRwczovL2RvdWJsZWNsaWNrLm5ldDo0NDMiLCJmZWF0dXJlIjoiVHJ1c3RUb2tlbnMiLCJleHBpcnkiOjE2MzQwODMxOTksImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9"><meta http-equiv="origin-trial" content="A9RQ+LxFazAousxUwSCzaihJjHLO1UyjQp0teZKHl7WdbVjPDfHSKMd6D/ZI5MTjqClFycbl70EFd7cBJWXqKQEAAACBeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXRhZ3NlcnZpY2VzLmNvbTo0NDMiLCJmZWF0dXJlIjoiVHJ1c3RUb2tlbnMiLCJleHBpcnkiOjE2MzQwODMxOTksImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9"><meta http-equiv="origin-trial" content="A6WKeWsdn1Ct+ZPqS9NCxxaiBoQ7wdTkK2/gE69Yu0gfBKJfo1gOvgkGmf5/xaIajT/RUb9AbnF1FsSZ47cCcQcAAACBeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXN5bmRpY2F0aW9uLmNvbTo0NDMiLCJmZWF0dXJlIjoiVHJ1c3RUb2tlbnMiLCJleHBpcnkiOjE2MzQwODMxOTksImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9"><meta http-equiv="origin-trial" content="A04ZCu7yjrHgwQJK5ISHhH1DSg0qqowEay3n70KO6wV3D2Mj+OX3Kw20aSMitzgdG1xfrN7sOJV/dZIk+RvCzA4AAAB2eyJvcmlnaW4iOiJodHRwczovL2dvb2dsZS5jb206NDQzIiwiZmVhdHVyZSI6IlRydXN0VG9rZW5zIiwiZXhwaXJ5IjoxNjM0MDgzMTk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="A88otRz1Fd3Nt567e2IYshC18LL3KGVXpVJW9oTCId4RYaygt23pbb4JqrbdIO/bwZPWEmRjBIRBu/bZbDR7Pg4AAABueyJvcmlnaW4iOiJodHRwczovL2ltYXNkay5nb29nbGVhcGlzLmNvbTo0NDMiLCJmZWF0dXJlIjoiVHJ1c3RUb2tlbnMiLCJleHBpcnkiOjE2MzQwODMxOTksImlzVGhpcmRQYXJ0eSI6dHJ1ZX0="><meta http-equiv="origin-trial" content="A0gCLbXCcL0R1Oc8tFPDs0G4Elz17w3zHp+Zst66+D17veE2o7fUcPsA114QtSTRqfVJLMeTSdeWOom0CcyCsgYAAAB7eyJvcmlnaW4iOiJodHRwczovL2RvdWJsZWNsaWNrLm5ldDo0NDMiLCJmZWF0dXJlIjoiVHJ1c3RUb2tlbnMiLCJleHBpcnkiOjE2MzQwODMxOTksImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9"><meta http-equiv="origin-trial" content="A9RQ+LxFazAousxUwSCzaihJjHLO1UyjQp0teZKHl7WdbVjPDfHSKMd6D/ZI5MTjqClFycbl70EFd7cBJWXqKQEAAACBeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXRhZ3NlcnZpY2VzLmNvbTo0NDMiLCJmZWF0dXJlIjoiVHJ1c3RUb2tlbnMiLCJleHBpcnkiOjE2MzQwODMxOTksImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9"><meta http-equiv="origin-trial" content="A6WKeWsdn1Ct+ZPqS9NCxxaiBoQ7wdTkK2/gE69Yu0gfBKJfo1gOvgkGmf5/xaIajT/RUb9AbnF1FsSZ47cCcQcAAACBeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXN5bmRpY2F0aW9uLmNvbTo0NDMiLCJmZWF0dXJlIjoiVHJ1c3RUb2tlbnMiLCJleHBpcnkiOjE2MzQwODMxOTksImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9"><meta http-equiv="origin-trial" content="A04ZCu7yjrHgwQJK5ISHhH1DSg0qqowEay3n70KO6wV3D2Mj+OX3Kw20aSMitzgdG1xfrN7sOJV/dZIk+RvCzA4AAAB2eyJvcmlnaW4iOiJodHRwczovL2dvb2dsZS5jb206NDQzIiwiZmVhdHVyZSI6IlRydXN0VG9rZW5zIiwiZXhwaXJ5IjoxNjM0MDgzMTk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="A2YAd4xOntTGygIDjApOTtXOgVI3IWsd5OnOGq3RbRkIQwyqYWNl1JGRAcvtm6VOHDj4n07T/J19VqLuJn3MmQ8AAACWeyJvcmlnaW4iOiJodHRwczovL2RvdWJsZWNsaWNrLm5ldDo0NDMiLCJmZWF0dXJlIjoiQ29udmVyc2lvbk1lYXN1cmVtZW50IiwiZXhwaXJ5IjoxNjMxNjYzOTk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlLCJ1c2FnZSI6InN1YnNldCJ9"><meta http-equiv="origin-trial" content="A2c5Ux+hivdkLh/KbZUGr6f7SCR0mZrBVfPJ+/OuDVHNwiYv+Lo83b9z5qL8sod78bQl0pSLtbvRWURo+xRl7AIAAACceyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXN5bmRpY2F0aW9uLmNvbTo0NDMiLCJmZWF0dXJlIjoiQ29udmVyc2lvbk1lYXN1cmVtZW50IiwiZXhwaXJ5IjoxNjMxNjYzOTk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlLCJ1c2FnZSI6InN1YnNldCJ9"><meta http-equiv="origin-trial" content="AzNJ4sd3tVurolpdvWYZ4cmP9Po7RJhEHSqmC3pgxW9fFVZvchhtcMUgHAs97npxMD1jhXHO8s6q6Wy1MMLxKgEAAACceyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXRhZ3NlcnZpY2VzLmNvbTo0NDMiLCJmZWF0dXJlIjoiQ29udmVyc2lvbk1lYXN1cmVtZW50IiwiZXhwaXJ5IjoxNjMxNjYzOTk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlLCJ1c2FnZSI6InN1YnNldCJ9"><meta http-equiv="origin-trial" content="AwfG8hAcHnPa/kJ1Co0EvG/K0F9l1s2JZGiDLt2mhC3QI5Fh4qmsmSwrWObZFbRC9ieDaSLU6lHRxhGUF/i9sgoAAACBeyJvcmlnaW4iOiJodHRwczovL2RvdWJsZWNsaWNrLm5ldDo0NDMiLCJmZWF0dXJlIjoiSW50ZXJlc3RDb2hvcnRBUEkiLCJleHBpcnkiOjE2MjYyMjA3OTksImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9"><meta http-equiv="origin-trial" content="AwQ7dCmHkvR6FuOFxAuNnktYSQrGbL4dF+eBkrwNLALc69Wr//PnO1yzns3pjUoCaYbKHtVcnng2hU+8OUm0PAYAAACHeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXN5bmRpY2F0aW9uLmNvbTo0NDMiLCJmZWF0dXJlIjoiSW50ZXJlc3RDb2hvcnRBUEkiLCJleHBpcnkiOjE2MjYyMjA3OTksImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9"><meta http-equiv="origin-trial" content="AysVDPGQTLD/Scn78x4mLwB1tMfje5jwUpAAzGRpWsr1NzoN7MTFhT3ClmImi2svDZA7V6nWGIV8YTPsSRTe0wYAAACHeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXRhZ3NlcnZpY2VzLmNvbTo0NDMiLCJmZWF0dXJlIjoiSW50ZXJlc3RDb2hvcnRBUEkiLCJleHBpcnkiOjE2MjYyMjA3OTksImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9"><script src="test_files/pubads_impl_2021090101.js" async=""></script><script charset="utf-8" src="test_files/chunk-2d21ab85.js"></script><script charset="utf-8" src="test_files/hljs.js"></script><script data-vue-meta="ssr" onload="window['e0044d29c024'] = true" src="test_files/a.js" data-vmid="checklogin"></script><script charset="utf-8" src="test_files/chunk-2d21042a.js"></script></head>
+<body>
+
+
+<div id="app" data-async-called="true"><div class="tm-layout__wrapper"><!----><div></div><!----><header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----><span class="tm-header__logo-wrap"><a href="https://habr.com/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title><use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a><span class="tm-header__beta-sign" style="display:none;">β</span></span><div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title><use xlink:href="/img/megazord-v24.cee85629.svg#arrow-down"></use></svg></button></div><!----></div><a href="https://habr.com/ru/sandbox/start/" class="tm-header__become-author-btn">
+              Как стать автором
+            </a><!----><a href="https://effect.habr.com/s/W8mII_o9SHnrlW2fntWlNw.I5o-SdrG3OlGcCUdobeQgaw7Xf1lPtEzQS7dYG5yxrFP-JECXf5pkmz0ezpdCFu3nNWtvwVfjT6W6j2Xp5Vgaw" target="_blank" class="tm-top-link" style="color: rgb(153, 255, 167);">
+  Финтех-тест для Халка
+</a><!----></div></div></header><div class="tm-layout"><div class="tm-page-progress-bar"></div><div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><a href="https://habr.com/ru/feed/" class="tm-main-menu__item">
+        Моя лента
+      </a><a href="https://habr.com/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a><a href="https://habr.com/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="https://habr.com/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="https://habr.com/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="https://habr.com/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="https://habr.com/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="https://habr.com/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div><div class="tm-header-user-menu tm-base-layout__user-menu"><a href="https://habr.com/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title><use xlink:href="/img/megazord-v24.cee85629.svg#search"></use></svg></a><div class="tm-tracker-dropdown tm-header-user-menu__item"><div class="tm-dropdown"><div class="tm-dropdown__head"><button title="Трекер" class="tm-tracker-dropdown__notifications-button tm-tracker-dropdown__button_dark"><!----><svg height="24" width="24" class="tm-svg-img tm-tracker-dropdown__icon"><title>Трекер</title><use xlink:href="/img/megazord-v24.cee85629.svg#notifications"></use></svg></button></div><!----></div></div><!----><div class="tm-header-user-menu__item tm-header-user-menu__write"><a href="https://habr.com/ru/publication/new/" class=""><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_write tm-header-user-menu__icon_dark"><title>Написать публикацию</title><use xlink:href="/img/megazord-v24.cee85629.svg#write"></use></svg></a><!----></div><div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><div data-test-id="menu-toggle-user" class="tm-entity-image"><img alt="" src="test_files/6d5ac2ecd00aceaa01e31c6dc7d835f4.jpg" class="tm-entity-image__pic" width="32" height="32"></div><!----></div><!----></div><!----></div><!----></div></div></div></div><!----><div class="tm-page-width"></div><main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----><div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title><use xlink:href="/img/megazord-v24.cee85629.svg#pull-arrow"></use></svg></div></div><!----><div class="tm-page-article__body"><article class="tm-page-article__content tm-page-article__content_inner"><div class="tm-page-article__head-wrapper"><!----><div class="tm-article-snippet tm-page-article__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="https://habr.com/ru/users/prograholic/" title="prograholic" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" loading="lazy" src="test_files/501761ebca3fa5e66eed92db94e1a923.jpg" class="tm-entity-image__pic" width="24" height="24"></div></a><span class="tm-user-info__user"><a href="https://habr.com/ru/users/prograholic/" class="tm-user-info__username">
+      prograholic
+    </a></span></span><span class="tm-article-snippet__datetime-published"><time datetime="2012-11-20T14:55:12.000Z" title="2012-11-20, 20:55">20  ноября  2012 в 20:55</time></span></div><!----></div><h1 class="tm-article-snippet__title tm-article-snippet__title_h1" lang="ru"><span>Пишем свой std::function (boost::function)</span></h1><div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="https://habr.com/ru/hub/programming/" class="tm-article-snippet__hubs-item-link tm-article-snippet__hubs-item-link_subscribed"><span>Программирование</span><span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="https://habr.com/ru/hub/cpp/" class="tm-article-snippet__hubs-item-link tm-article-snippet__hubs-item-link_subscribed"><span>C++</span><span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div><div class="tm-article-snippet__labels"><!----></div><!----><!----></div></div><!----><div data-gallery-root="" class="tm-article-body" lang="ru"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml">Классы
+ std::function и boost::function являются высокоуровневыми обертками над
+ функциями и функциональными объектами. Объекты таких классов позволяют 
+хранить и вызывать функции и функторы с заданной сигнатурой, что бывает 
+удобно, например, при создании callback вызовов (например, мы можем 
+регистрировать несколько обработчиков, и это могут быть как обычные 
+функции, так и объекты с определенным оператором =)<br>
+<br>
+Если вам интересно, каким образом реализуется данный функционал, то прошу под кат<br>
+<a name="habracut"></a><br>
+<br>
+<h4>Краткое введение, примеры использования</h4><br>
+Если вы не знакомы с boost::function и std::function, то можно ознакомиться с ними <a href="http://www.boost.org/doc/libs/1_52_0/doc/html/function.html">здесь</a> и <a href="http://ru.cppreference.com/w/cpp/utility/functional/function">здесь</a><br>
+std::function входит в стандарт языка c++11, и компиляторы gcc-4.7 и 
+msvc-2012 его поддерживают (возможно, более ранние версии тоже имеют 
+поддержку). В принципе, в рамках этой статьи можно считать реализацию от
+ boost и стандартную полностью идентичными, так что пользоваться можно 
+любой из реализаций<br>
+<br>
+Собственно пример использования:<br>
+<pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">func1</span><span class="hljs-params">()</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+}
+<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">callable</span> {</span>
+  <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">operator</span><span class="hljs-params">()</span> <span class="hljs-params">()</span> </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>;
+  }
+};
+<span class="hljs-comment">///...</span>
+boost::function&lt;<span class="hljs-keyword">int</span> (<span class="hljs-keyword">void</span>)&gt; x;
+x = func1;
+<span class="hljs-keyword">int</span> res = x(); <span class="hljs-comment">// вернет 0 в качестве результата</span>
+
+callable c;
+x = c;
+res = x(); <span class="hljs-comment">// вернет 1 в качестве результата</span></code></pre><br>
+<br>
+<h4>Переходим к самой реализации</h4><br>
+Саму реализацию будем делать в несколько этапов:<br>
+<ul>
+<li>Самый простой use-case — инициализировать наш объект указателем на функцию или объектом-функцией и вызвать оператор ()</li>
+<li>Поддержка операторов присваивания и копирующего конструктора</li>
+<li>Поддержка указателей на функции-члены</li>
+</ul><br>
+<h5>Самая простая реализация, понятие Type erasure</h5><br>
+В основе реализации данного класса лежит паттерн <a href="http://www.cplusplus.com/forum/articles/18756/">Type Erasure</a>, более доступно можно почитать <a href="http://prograholic.blogspot.ru/2011/11/type-erasure.html">здесь</a>
+ Его предназначение заключается в том, что мы можем «спрятать» за одним 
+интерфейсом различные сущности (объекты, указатели и пр.), которые 
+предоставляют сходные возможности (например, осуществить вызов функции с
+ тремя аргументами). Type erasure также можно представить как мостик, 
+который связывает полиморфизм времени исполнения (runtime polymorfism) и
+ полиморфизм времени компиляции (compile-time polymorfism).<br>
+<br>
+Итак, переходим к реализации.<br>
+Мы будем использовать variadic templates из стандарта C++11. Например, gcc поддерживает этот функционал аж с версии <a href="http://gcc.gnu.org/gcc-4.3/cxx0x_status.html">4.3</a>, поэтому можно смело им пользоваться.<br>
+<br>
+Не будем оригинальны и назовем наш класс function. Очевидно, что класс 
+будет шаблонный, также очевидно, что у него будет один параметр шаблона —
+ сигнатура (тип) вызываемой функции. Общая реализация шаблона 
+отсутствует, вся работа будет происходить в частичной специализации 
+шаблона. Частичная специализация нужна для того чтобы мы могли 
+использовать типы аргументов и возвращаемого значения из нашей 
+сигнатуры.<br>
+Сама реализация:<br>
+<pre><code class="hljs cpp"><span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> UnusedType&gt;
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">function</span>;</span>
+
+<span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> ReturnType, <span class="hljs-keyword">typename</span> ... ArgumentTypes&gt;
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">function</span> &lt;ReturnType (ArgumentTypes ...)&gt; {</span>
+<span class="hljs-keyword">public</span>:
+	function() : mInvoker() {}
+	<span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> FunctionT&gt;
+	function(FunctionT f) : mInvoker(<span class="hljs-keyword">new</span> free_function_holder&lt;FunctionT&gt;(f)) {}
+
+	<span class="hljs-function">ReturnType <span class="hljs-title">operator</span> <span class="hljs-params">()</span><span class="hljs-params">(ArgumentTypes ... args)</span> </span>{
+		<span class="hljs-keyword">return</span> mInvoker-&gt;invoke(args ...);
+	}
+<span class="hljs-keyword">private</span>:
+	<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">function_holder_base</span> {</span>
+	<span class="hljs-keyword">public</span>:
+		function_holder_base() {}
+		<span class="hljs-keyword">virtual</span> ~function_holder_base() {}
+		<span class="hljs-function"><span class="hljs-keyword">virtual</span> ReturnType <span class="hljs-title">invoke</span><span class="hljs-params">(ArgumentTypes ... args)</span> </span>= <span class="hljs-number">0</span>;
+	};
+	<span class="hljs-keyword">typedef</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">auto_ptr</span>&lt;function_holder_base&gt; <span class="hljs-keyword">invoker_t</span>;
+
+	<span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> FunctionT&gt;
+	<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">free_function_holder</span> :</span> <span class="hljs-keyword">public</span> function_holder_base {
+	<span class="hljs-keyword">public</span>:
+		free_function_holder(FunctionT func) : function_holder_base(), mFunction(func) {}
+
+		<span class="hljs-function"><span class="hljs-keyword">virtual</span> ReturnType <span class="hljs-title">invoke</span><span class="hljs-params">(ArgumentTypes ... args)</span> </span>{
+			<span class="hljs-keyword">return</span> mFunction(args ...);
+		}
+	<span class="hljs-keyword">private</span>:
+		FunctionT mFunction;
+	};
+	<span class="hljs-keyword">invoker_t</span> mInvoker;
+};</code></pre><br>
+Класс function определяет оператор () соответствующий сигнатуре функции и
+ передает управление методу invoke у класса function_holder_base. Этот 
+класс имеет виртуальную функцию invoke, которая тоже совпадает с 
+указанной сигнатурой (за исключением неявного параметра this). <br>
+Также класс function имеет шаблонный конструктор, который принимает один
+ аргумент, в этом конструкторе создается наследник free_function_holder 
+класса function_holder_base. Этот наследник является шаблонным классом —
+ он сохраняет в себе переданный аргумент (обычно это функтор или 
+указатель на функцию). В нем также определяется метод invoke, который 
+вызывает сохраненный функтор с заданными аргументами.<br>
+<br>
+Здесь необходимо отметить несколько особенностей шаблонов в C++:<br>
+<ul>
+<li>Тип возвращаемого значения может быть любой (в том числе и void), то
+ есть конструкция return mFunction(args ...); валидна даже в том случае,
+ когда возвращаемое значение void. Это сделано специально для шаблонного
+ метапрограммирования, чтобы не плодить специализации для типа void.</li>
+<li>Аналогичным образом работают и variadic templates если количество входных аргументов равно 0 (функция без параметров).</li>
+<li>Мы можем написать шаблонный класс, который является наследником 
+какого-то базового класса (причем необязательно шаблонного) — на этом 
+стоит весь паттерн Type erasure</li>
+</ul><br>
+<br>
+В принципе, мы получили работоспособный аналог std::function и boost::function, мы вполне можем писать следующий код: <pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">func2</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> * x, <span class="hljs-keyword">int</span> y)</span> </span>{
+	<span class="hljs-keyword">return</span> (*x) + y;
+}
+<span class="hljs-comment">///...</span>
+	<span class="hljs-keyword">typedef</span> function&lt;<span class="hljs-keyword">int</span> (<span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> * , <span class="hljs-keyword">int</span>)&gt; <span class="hljs-keyword">int_function_with_two_args_t</span>;
+	<span class="hljs-function"><span class="hljs-keyword">int_function_with_two_args_t</span> <span class="hljs-title">f2</span><span class="hljs-params">(func2)</span></span>;
+	<span class="hljs-keyword">int</span> x = <span class="hljs-number">10</span>;
+	<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"calling function with signature int (const int * , int): "</span> &lt;&lt;  f2(&amp;x, <span class="hljs-number">20</span>) &lt;&lt; <span class="hljs-built_in">endl</span>;</code></pre><br>
+Переходим к улучшениям нашего класса:<br>
+<br>
+<h5>Копируем поведение обычного указателя на функцию — оператор присваивания и конструктор копирования</h5><br>
+Для того чтобы скопировать или присвоить объект мы должны уметь 
+копировать (клонировать) указатель на базовый класс 
+function_holder_base. Для этого расширим интерфейс этого класса 
+следующим образом:<br>
+ <pre><code class="hljs cpp">	<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">function_holder_base</span> {</span>
+	<span class="hljs-keyword">public</span>:
+		function_holder_base() {}
+		<span class="hljs-keyword">virtual</span> ~function_holder_base(){}
+
+		<span class="hljs-function"><span class="hljs-keyword">virtual</span> ReturnType <span class="hljs-title">invoke</span><span class="hljs-params">(ArgumentTypes ... args)</span> </span>= <span class="hljs-number">0</span>;
+		<span class="hljs-function"><span class="hljs-keyword">virtual</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">auto_ptr</span>&lt;function_holder_base&gt; <span class="hljs-title">clone</span><span class="hljs-params">()</span> </span>= <span class="hljs-number">0</span>;
+
+	<span class="hljs-keyword">private</span>:
+		function_holder_base(<span class="hljs-keyword">const</span> function_holder_base &amp; );
+		<span class="hljs-keyword">void</span> <span class="hljs-keyword">operator</span> = (<span class="hljs-keyword">const</span> function_holder_base &amp;);
+	};</code></pre><br>
+Делаем наш класс некопируемым (декларируем соответствующие оператор и 
+конструктор в private секции), и добявляем метод clone, чтобы наследники
+ сами определяли правильную стратегию клонирования.<br>
+<br>
+Также, в класс function добавляются операторы присваивания и конструктор копирования:<br>
+<pre><code class="hljs delphi">	<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">function</span> &amp; other)</span>
+		:</span> mInvoker(other.mInvoker-&gt;clone()) <span class="hljs-comment">{}</span>
+
+	<span class="hljs-function"><span class="hljs-keyword">function</span> &amp; <span class="hljs-title">operator</span> = <span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">function</span> &amp; other)</span> <span class="hljs-comment">{
+		mInvoker = other.mInvoker-&gt;clone();
+	}</span></span></code></pre><br>
+Здесь мы используем auto_ptr и его разрушающее присваивание.<br>
+<br>
+Осталось написать реализацию метода clone в наследнике — free_function_holder:<br>
+<pre><code class="hljs cpp">		<span class="hljs-keyword">typedef</span> free_function_holder&lt;FunctionT&gt; self_type;
+		<span class="hljs-function"><span class="hljs-keyword">virtual</span> <span class="hljs-keyword">invoker_t</span> <span class="hljs-title">clone</span><span class="hljs-params">()</span> </span>{
+			<span class="hljs-keyword">return</span> <span class="hljs-keyword">invoker_t</span>(<span class="hljs-keyword">new</span> self_type(mFunction));
+		}</code></pre><br>
+<br>
+Вот собственно и все, теперь наш класс ведет себя как обычный указатель на функцию, и мы можем делать так: <br>
+<pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">func1</span><span class="hljs-params">()</span> </span>{
+	<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+}
+<span class="hljs-comment">///...</span>
+	<span class="hljs-keyword">typedef</span> function&lt;<span class="hljs-keyword">int</span> (<span class="hljs-keyword">void</span>)&gt; <span class="hljs-keyword">int_function_t</span>;
+	<span class="hljs-function"><span class="hljs-keyword">int_function_t</span> <span class="hljs-title">f1</span><span class="hljs-params">(func1)</span></span>;
+	<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"calling function with signature int (void): "</span> &lt;&lt;  f1() &lt;&lt; <span class="hljs-built_in">endl</span>;
+
+	<span class="hljs-keyword">int_function_t</span> f2;
+	f2 = f1;
+	<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"calling function after assignment operator with signature int (void): "</span> &lt;&lt;  f2() &lt;&lt; <span class="hljs-built_in">endl</span>;
+
+	<span class="hljs-function"><span class="hljs-keyword">int_function_t</span> <span class="hljs-title">f3</span><span class="hljs-params">(f2)</span></span>;
+	<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"calling function after copying ctor with signature int (void): "</span> &lt;&lt;  f3() &lt;&lt; <span class="hljs-built_in">endl</span>;</code></pre><br>
+<br>
+Переходим к заключительной части:<br>
+<h5>Добавляем поддержку указателей на функции-члены</h5><br>
+Поддержка указателей на методы у меня получилась довольно ограниченная: 
+можно передавать объект к которому применяется указатель на метод только
+ по значению (а хотелось бы еще по ссылке (const и не const) и по 
+указателю (const и не const)), но в принципе для примера этого будет 
+достаточно.<br>
+<br>
+При использовании boost (std) и нашей реализации function придерживаемся
+ правила, что первым аргументом должен идти объект, к которому 
+применяется указатель на метод, соответственно аргументы теперь делятся 
+на два вида: сам объект, и аргументы метода. Соответственно, у нас есть 
+гарантия, что количество аргументов строго больше 0, этим мы и 
+воспользуемся далее:<br>
+<pre><code class="hljs cpp">	<span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> FunctionType, <span class="hljs-keyword">typename</span> ClassType, <span class="hljs-keyword">typename</span> ... RestArgumentTypes&gt;
+	<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">member_function_holder</span> :</span> <span class="hljs-keyword">public</span> function_holder_base
+	{
+	<span class="hljs-keyword">public</span>:
+		<span class="hljs-keyword">typedef</span> FunctionType ClassType::* <span class="hljs-keyword">member_function_signature_t</span>;
+		member_function_holder(<span class="hljs-keyword">member_function_signature_t</span> f) : mFunction(f){}
+
+		<span class="hljs-function"><span class="hljs-keyword">virtual</span> ReturnType <span class="hljs-title">invoke</span><span class="hljs-params">(ClassType obj, RestArgumentTypes ... restArgs)</span> </span>{
+			<span class="hljs-keyword">return</span> (obj.*mFunction)(restArgs ...);
+		}
+
+		<span class="hljs-function"><span class="hljs-keyword">virtual</span> <span class="hljs-keyword">invoker_t</span> <span class="hljs-title">clone</span><span class="hljs-params">()</span> </span>{
+			<span class="hljs-keyword">return</span> <span class="hljs-keyword">invoker_t</span>(<span class="hljs-keyword">new</span> member_function_holder(mFunction));
+		}
+	<span class="hljs-keyword">private</span>:
+		<span class="hljs-keyword">member_function_signature_t</span> mFunction;
+	};</code></pre><br>
+Реализация конструктора, который принимает указатель на метод тривиальна:<br>
+<pre><code class="hljs php">	template &lt;typename FunctionType, typename ClassType&gt;
+	<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(FunctionType ClassType::* f)</span>
+		: <span class="hljs-title">mInvoker</span><span class="hljs-params">(new member_function_holder&lt;FunctionType, ArgumentTypes ...&gt;<span class="hljs-params">(f)</span>)</span>
+	</span>{}</code></pre><br>
+ Мы сделали еще одного наследника function_holder_base специально для 
+указателей на методы. Здесь используется особенность variadic templates:
+ переменное количество типов (которое задается троеточием) можно 
+расщепить на фиксированную часть, и остаток переменной длины (в котором 
+количество типов меньше на размер фиксированной части). В конструкторе 
+мы передаем в параметры шаблона фиксированную часть состоящую из одного 
+типа — сигнатура функции, и произвольную часть — все остальное (это типы
+ всех аргументов), а в реализации member_function_holder мы требуем, 
+чтобы фиксированная часть состояла из двух элементов — сигнатура 
+функции, класс, в котором находится наш метод, и аргументы 
+непосредственно для вызова (здесь мы как раз используем указанную выше 
+гарантию, что количество всех аргументов строго больше 0). Таким 
+образом, мы сохраняем указатель на метод в конструкторе, и вызываем его в
+ реализации метода invoke. <br>
+<br>
+<blockquote> Отдельно хочется сказать про крайне неудобный и 
+неинтуитивный способ декларирования типа «указатель на метод» и про 
+способ вызова такого метода. По этому поводу в <a href="http://www.parashift.com/c++-faq/macro-for-ptr-to-memfn.html">C++ FAQ</a>
+ есть предупреждение, о том как минимизировать количество головной боли 
+при работе с указателями на методы (я полчаса гуглил, как записать 
+правильно это выражение)</blockquote><br>
+<br>
+Вот и пример использования: <br>
+<pre><code class="hljs cpp"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Foo</span> {</span>
+	<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">smth</span><span class="hljs-params">(<span class="hljs-keyword">int</span> x)</span> </span>{
+		<span class="hljs-keyword">return</span> x + <span class="hljs-number">1</span>;
+	}
+};
+<span class="hljs-comment">///...</span>
+	<span class="hljs-keyword">typedef</span> function&lt;<span class="hljs-keyword">int</span> (Foo, <span class="hljs-keyword">int</span>)&gt; <span class="hljs-keyword">member_function_t</span>;
+	<span class="hljs-keyword">member_function_t</span> f1 = &amp;Foo::smth;
+
+	Foo foo;
+	<span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"calling member function with signature int (int): "</span> &lt;&lt;  f1(foo, <span class="hljs-number">5</span>) &lt;&lt; <span class="hljs-built_in">endl</span>;
+</code></pre><br>
+<br>
+<h4>Заключение</h4><br>
+Благодаря поддержке variadic templates реализация function получилась 
+довольно лаконичной, в том же boost из-за необходимости поддерживать 
+старые компиляторы (в которых нет variadic templates) данный функционал 
+реализован с помощью boost.preprocessor (и имеет ограничение на 
+количество аргументов — по умолчанию 10, можно поменять, определив 
+соответствующий define: BOOST_FUNCTION_MAX_ARGS). Грубо говоря, 
+реализация сделана для функций с одним аргументом, а потом «клонирована»
+ на большее количество аргументов с помощью препроцессорной магии.<br>
+<br>
+Полностью пример находится <a href="https://github.com/prograholic/blog/tree/master/cxx_function">здесь</a></div></div><!----><!----></div><div class="tm-article-body__tags"><div class="tm-article-body__tags-links"><span class="tm-article-body__tags-title">Теги:</span><span class="tm-article-body__tags-item"><a href="https://habr.com/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bstd%3A%3Afunction%5D" class="tm-article-body__tags-item-link">std::function</a></span><span class="tm-article-body__tags-item"><a href="https://habr.com/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bc%2B%2B%5D" class="tm-article-body__tags-item-link">c++</a></span><span class="tm-article-body__tags-item"><a href="https://habr.com/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bboost%5D" class="tm-article-body__tags-item-link">boost</a></span><span class="tm-article-body__tags-item"><a href="https://habr.com/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Btemplate%20metaprogramming%5D" class="tm-article-body__tags-item-link">template metaprogramming</a></span></div><div class="tm-article-body__tags-links"><span class="tm-article-body__tags-title">Хабы:</span><span class="tm-article-body__tags-item"><a href="https://habr.com/ru/hub/programming/" class="tm-article-body__tags-item-link">
+                  Программирование
+                </a></span><span class="tm-article-body__tags-item"><a href="https://habr.com/ru/hub/cpp/" class="tm-article-body__tags-item-link">
+                  C++
+                </a></span></div></div></article><div class="tm-article__icons-wrapper" style=""><div class="tm-data-icons tm-page-article__counters-panel"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 49: ↑44 и ↓5</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-rating"></use></svg><span title="Всего голосов 49: ↑44 и ↓5" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+39</span></div><div class="v-portal" style="display:none;"></div></div><!----><!----><button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-favorite"></use></svg></span><span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    170
+  </span></button><div title="Читать комментарии" class="tm-article-comments-counter-link tm-data-icons__item"><a href="https://habr.com/ru/post/159389/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      36
+    </span></a><a href="https://habr.com/ru/post/159389/comments/" class="tm-article-comments-counter-link__link"><span title="Читать новые комментарии" class="tm-article-comments-counter-link__unread-counter">
+      +36
+    </span></a></div><div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button><!----></div><div class="v-portal" style="display:none;"></div></div></div><!----></div><!----><div class="tm-page-article__additional-blocks"><!----><section class="tm-block tm-block_spacing-bottom"><!----><div class="tm-block__body"><div class="tm-article-author tm-page-article__author"><!----><div class="tm-user-card tm-article-author__user-card tm-user-card_variant-two-column"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="https://habr.com/ru/users/prograholic/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="test_files/501761ebca3fa5e66eed92db94e1a923_002.jpg" class="tm-entity-image__pic"></div></a><div class="tm-user-card__meta"><div title=" 79 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    61
+  </div><div class="tm-karma__text">
+    Карма
+  </div></div><div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"><div class="tm-rating__counter">0</div></div><div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div><div class="tm-user-card__info"><div class="tm-user-card__title"><span class="tm-user-card__name">Алексей Кутумов</span><a href="https://habr.com/ru/users/prograholic/" class="tm-user-card__nickname">
+          @prograholic
+        </a><!----></div><p class="tm-user-card__short-info">Системный программист</p></div></div><div class="tm-user-card__buttons tm-user-card__buttons_variant-two-column"><!----><div class="tm-user-card__button"><div class="tm-button-follow tm-user-card__button-follow"><span class="tm-button-follow__unfollow">
+    ×
+  </span><button type="button" class="tm-button-follow__button tm-button-follow__button_big">
+    Подписаться
+  </button></div></div><!----><a href="https://habr.com/ru/conversations/prograholic/" class="tm-user-card__button tm-user-card__button_write"><svg height="16" width="16" class="tm-svg-img tm-user-card__button-icon"><title>Отправить сообщение</title><use xlink:href="/img/megazord-v24.cee85629.svg#mail"></use></svg></a><!----></div></div><!----></div></div><!----></section><div class="tm-page-article__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="https://habr.com/ru/post/159389/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 36 
+    </span></a><a href="https://habr.com/ru/post/159389/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><span title="Читать новые комментарии" class="tm-article-comments-counter-link__unread-counter tm-article-comments-counter-link__unread-counter_contrasted">
+      +36
+    </span></a></div></div></div><!----><section class="tm-block tm-block_spacing-around"><header class="tm-block__header"><h2 class="tm-block__title">Похожие публикации</h2><!----></header><div class="tm-block__body"><ul class="tm-article-list-block__list"><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-block tm-article-snippet-block-block_preview"><div class="tm-article-snippet-block__user-meta"><div class="tm-article-snippet-block__date"><time datetime="2018-06-10T05:03:56.000Z" title="2018-06-10, 10:03">10  июня  2018 в 10:03</time></div></div><h2 class="tm-article-title tm-article-title_block"><a href="https://habr.com/ru/post/413765/" class="tm-article-title__link"><span>Chain of Responsibility на C++ variadic templates</span></a></h2><div class="tm-data-icons"><!----><div class="tm-votes-meter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_small"><title>Всего голосов 12: ↑10 и ↓2</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-rating"></use></svg><span title="Всего голосов 12: ↑10 и ↓2" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_small">+8</span></div><span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">6.1K</span></span><button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-favorite"></use></svg></span><span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    52
+  </span></button><div title="Читать комментарии" class="tm-article-comments-counter-link tm-data-icons__item"><a href="https://habr.com/ru/post/413765/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      9
+    </span></a><!----></div><!----><div class="v-portal" style="display:none;"></div></div></article></li><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-block tm-article-snippet-block-block_preview"><div class="tm-article-snippet-block__user-meta"><div class="tm-article-snippet-block__date"><time datetime="2014-11-18T16:56:11.000Z" title="2014-11-18, 21:56">18  ноября  2014 в 21:56</time></div></div><h2 class="tm-article-title tm-article-title_block"><a href="https://habr.com/ru/post/243581/" class="tm-article-title__link"><span>Literal operator templates for strings</span></a></h2><div class="tm-data-icons"><!----><div class="tm-votes-meter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_small"><title>Всего голосов 20: ↑16 и ↓4</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-rating"></use></svg><span title="Всего голосов 20: ↑16 и ↓4" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_small">+12</span></div><span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">12K</span></span><button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-favorite"></use></svg></span><span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    79
+  </span></button><div title="Читать комментарии" class="tm-article-comments-counter-link tm-data-icons__item"><a href="https://habr.com/ru/post/243581/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      11
+    </span></a><!----></div><!----><div class="v-portal" style="display:none;"></div></div></article></li><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-block tm-article-snippet-block-block_preview"><div class="tm-article-snippet-block__user-meta"><div class="tm-article-snippet-block__date"><time datetime="2014-04-08T20:11:18.000Z" title="2014-04-09, 02:11">9  апреля  2014 в 02:11</time></div></div><h2 class="tm-article-title tm-article-title_block"><a href="https://habr.com/ru/post/218341/" class="tm-article-title__link"><span>Интерпретация во время компиляции, или Альтернативное понимание лямбд в C++11</span></a></h2><div class="tm-data-icons"><!----><div class="tm-votes-meter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_small"><title>Всего голосов 102: ↑98 и ↓4</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-rating"></use></svg><span title="Всего голосов 102: ↑98 и ↓4" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_small">+94</span></div><span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">30K</span></span><button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-favorite"></use></svg></span><span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    209
+  </span></button><div title="Читать комментарии" class="tm-article-comments-counter-link tm-data-icons__item"><a href="https://habr.com/ru/post/218341/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      13
+    </span></a><!----></div><!----><div class="v-portal" style="display:none;"></div></div></article></li><!----></ul></div><!----></section><section class="tm-block tm-block_spacing-around"><header class="tm-block__header"><h2 class="tm-block__title">Минуточку внимания</h2><div class="tm-block__header-aside"><a href="https://tmtm.ru/megapost/" target="_blank" class="tm-block-extralink">
+      Разместить
+    </a></div></header><div class="tm-block__body"><div pagination="" slides-per-view="1" class="tm-promo-block__content-wrapper"><div class="tm-promo-block__item-wrapper"><a href="https://effect.habr.com/s/MgW17ZLzuX09Ygx08i3MiQ.uyCkP1I1Y-jJ9jpQnllj4NFdq7KbDgDsjw6O4tG7-48n8IK7dAUghaquR1MKug4PHv5DDTrV1JNaB3UK--xFQqrWKp-vwXG3VbUka5vmYqM" rel="nofollow sponsored" class="tm-promo-block__item tm-article-title__link"><header class="tm-promo-block__head"><div class="tm-promo-block__image-wrapper"><img alt="" src="test_files/YCuVwrB8PutuIlFN0Pwj2Q.html" class="tm-promo-block__image"></div><div class="tm-promo-block__label">
+              Событие
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 11 11" data-test-id="external-link-icon" class="tm-block-promo__external"><path fill="currentColor" d="M7.5 0a.5.5 0 000 1h1.793L5.146 5.146a.5.5 0 10.708.708L10 1.707V3.5a.5.5 0 001 0v-3a.5.5 0 00-.5-.5h-3zm-7 1a.5.5 0 00-.5.5v9a.5.5 0 00.5.5h9a.5.5 0 00.5-.5V6a.5.5 0 00-1 0v4H1V2h4a.5.5 0 000-1H.5z"></path></svg></div></header><div class="tm-promo-block__info"><h3 class="tm-promo-block__title">Дикий код: выходные с&nbsp;программистами в лесу</h3></div></a></div><div class="tm-promo-block__item-wrapper"><a href="https://effect.habr.com/s/br5h__6wsaVdg0Vf9RuD1A._iwNViwDc-3RbtqH2_ypZ7fergzJBa-u9WR54tOIqWwPLt8eQJ7umh7IlLowNFkDMGF9tffLyAvotE4tX2om2A" rel="nofollow sponsored" class="tm-promo-block__item tm-article-title__link"><header class="tm-promo-block__head"><div class="tm-promo-block__image-wrapper"><img alt="" src="test_files/2YHlrtJ1eedMAXaFDFxFpg.html" class="tm-promo-block__image"></div><div class="tm-promo-block__label">
+              Промо
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 11 11" data-test-id="external-link-icon" class="tm-block-promo__external"><path fill="currentColor" d="M7.5 0a.5.5 0 000 1h1.793L5.146 5.146a.5.5 0 10.708.708L10 1.707V3.5a.5.5 0 001 0v-3a.5.5 0 00-.5-.5h-3zm-7 1a.5.5 0 00-.5.5v9a.5.5 0 00.5.5h9a.5.5 0 00.5-.5V6a.5.5 0 00-1 0v4H1V2h4a.5.5 0 000-1H.5z"></path></svg></div></header><div class="tm-promo-block__info"><h3 class="tm-promo-block__title">Суровый код из Омска</h3></div></a></div><div class="tm-promo-block__item-wrapper"><a href="https://effect.habr.com/s/fWeE9a1IAoR32jNcCnZk8w.ZRW7AynUbFispkOBQ_aPY_b_2HqRseThhTxmYhz7QcfO9cQkEr50P3hjlXgMrcTyE5LfD-IaXBz2xxh9meuJzA" rel="nofollow " class="tm-promo-block__item tm-article-title__link"><header class="tm-promo-block__head"><div class="tm-promo-block__image-wrapper"><img alt="" src="test_files/TTSyyvRqHNstfGS6ZF-niw.html" class="tm-promo-block__image"></div><div class="tm-promo-block__label">
+              Мегапост
+              <!----></div></header><div class="tm-promo-block__info"><h3 class="tm-promo-block__title">Как мы возводили ЦОД для Утконос ОНЛАЙН</h3></div></a></div></div></div><!----></section><div class="tm-project-block tm-project-block_variant-courses"><div class="tm-project-block__header"><div class="tm-project-block__title"><a href="https://career.habr.com/courses?utm_campaign=courses_postlist&amp;utm_content=courses&amp;utm_medium=habr_block&amp;utm_source=habr_mob" rel="noopener" target="_blank" class="tm-project-block__title-link">Курсы</a></div></div><div class="tm-project-block__content"><ul class="tm-project-block-items"><li class="tm-project-block-items__item"><a href="https://career.habr.com/courses/1120?utm_campaign=courses_postlist&amp;utm_content=course&amp;utm_medium=habr_block&amp;utm_source=habr_mob" rel="noopener" target="_blank" class="tm-project-block-items__detail tm-project-block-items__title"><img alt="" src="test_files/medium_5fd0dd2174d050126e6f62c1249ed804.png" class="tm-project-block-items__image">🔥Профессиональная Android-разработка на Kotlin c наставником. Практический онлайн-интенсив. 12 занятий с персональным ментором
+    </a><div class="tm-project-block-items__properties"><span class="tm-project-block-items__property-item">14 сентября 2021</span><span class="tm-project-block-items__property-item">29&nbsp;990 ₽</span><span class="tm-project-block-items__property-item">AndroidSchool.ru</span></div></li><li class="tm-project-block-items__item"><a href="https://career.habr.com/courses/1597?utm_campaign=courses_postlist&amp;utm_content=course&amp;utm_medium=habr_block&amp;utm_source=habr_mob" rel="noopener" target="_blank" class="tm-project-block-items__detail tm-project-block-items__title"><img alt="" src="test_files/medium_797123e149338fb055455240686e5f09.jpg" class="tm-project-block-items__image">Основы программирования на C++. Уровень 1
+    </a><div class="tm-project-block-items__properties"><span class="tm-project-block-items__property-item">18 сентября 2021</span><span class="tm-project-block-items__property-item">15&nbsp;500 ₽</span><span class="tm-project-block-items__property-item">Level UP</span></div></li><li class="tm-project-block-items__item"><a href="https://career.habr.com/courses/1126?utm_campaign=courses_postlist&amp;utm_content=course&amp;utm_medium=habr_block&amp;utm_source=habr_mob" rel="noopener" target="_blank" class="tm-project-block-items__detail tm-project-block-items__title"><img alt="" src="test_files/medium_5fd0dd2174d050126e6f62c1249ed804.png" class="tm-project-block-items__image">🔥 Android-разработка c ментором. Практический онлайн-интенсив. Прокачайся в Android за 12 занятий
+    </a><div class="tm-project-block-items__properties"><span class="tm-project-block-items__property-item">22 сентября 2021</span><span class="tm-project-block-items__property-item">29&nbsp;990 ₽</span><span class="tm-project-block-items__property-item">AndroidSchool.ru</span></div></li><li class="tm-project-block-items__item"><a href="https://career.habr.com/courses/434?utm_campaign=courses_postlist&amp;utm_content=course&amp;utm_medium=habr_block&amp;utm_source=habr_mob" rel="noopener" target="_blank" class="tm-project-block-items__detail tm-project-block-items__title"><img alt="" src="test_files/medium_797123e149338fb055455240686e5f09.jpg" class="tm-project-block-items__image">Курс C# Junior Developer
+    </a><div class="tm-project-block-items__properties"><span class="tm-project-block-items__property-item">5 октября 2021</span><span class="tm-project-block-items__property-item">23&nbsp;990 ₽</span><span class="tm-project-block-items__property-item">Level UP</span></div></li><li class="tm-project-block-items__item"><a href="https://career.habr.com/courses/429?utm_campaign=courses_postlist&amp;utm_content=course&amp;utm_medium=habr_block&amp;utm_source=habr_mob" rel="noopener" target="_blank" class="tm-project-block-items__detail tm-project-block-items__title"><img alt="" src="test_files/medium_797123e149338fb055455240686e5f09.jpg" class="tm-project-block-items__image">C++ Junior Developer
+    </a><div class="tm-project-block-items__properties"><span class="tm-project-block-items__property-item">9 октября 2021</span><span class="tm-project-block-items__property-item">23&nbsp;990 ₽</span><span class="tm-project-block-items__property-item">Level UP</span></div></li></ul></div><div class="tm-project-block__footer"><a href="https://career.habr.com/courses?utm_campaign=courses_postlist&amp;utm_content=courses_all&amp;utm_medium=habr_block&amp;utm_source=habr_mob" rel="noopener" target="_blank" class="tm-project-block__link">Больше курсов на Хабр Карьере</a></div></div><section class="tm-block tm-block_spacing-around"><header class="tm-block__header"><h2 class="tm-block__title">Лучшие публикации за сутки</h2><!----></header><div class="tm-block__body"><ul class="tm-article-list-block__list"><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-block tm-article-snippet-block-block_preview"><div class="tm-article-snippet-block__user-meta"><div class="tm-article-snippet-block__date"><time datetime="2021-09-06T02:36:53.000Z" title="2021-09-06, 07:36">вчера в 07:36</time></div></div><h2 class="tm-article-title tm-article-title_block"><a href="https://habr.com/ru/post/576420/" class="tm-article-title__link"><span>Легенды и мифы процессора Эльбрус в примерах</span></a></h2><div class="tm-data-icons"><!----><div class="tm-votes-meter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_small"><title>Всего голосов 140: ↑126 и ↓14</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-rating"></use></svg><span title="Всего голосов 140: ↑126 и ↓14" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_small">+112</span></div><span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">21K</span></span><button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-favorite"></use></svg></span><span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    48
+  </span></button><div title="Читать комментарии" class="tm-article-comments-counter-link tm-data-icons__item"><a href="https://habr.com/ru/post/576420/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      137
+    </span></a><a href="https://habr.com/ru/post/576420/comments/" class="tm-article-comments-counter-link__link"><span title="Читать новые комментарии" class="tm-article-comments-counter-link__unread-counter">
+      +137
+    </span></a></div><!----><div class="v-portal" style="display:none;"></div></div></article></li><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-block tm-article-snippet-block-block_preview"><div class="tm-article-snippet-block__user-meta"><div class="tm-article-snippet-block__date"><time datetime="2021-09-06T04:33:01.000Z" title="2021-09-06, 09:33">вчера в 09:33</time></div></div><h2 class="tm-article-title tm-article-title_block"><a href="https://habr.com/ru/company/moonmodule/blog/576404/" class="tm-article-title__link"><span>Индия сфотографировала лунный модуль «Аполлона». Снова</span></a></h2><div class="tm-data-icons"><!----><div class="tm-votes-meter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_small"><title>Всего голосов 62: ↑61 и ↓1</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-rating"></use></svg><span title="Всего голосов 62: ↑61 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_small">+60</span></div><span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">12K</span></span><button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-favorite"></use></svg></span><span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    15
+  </span></button><div title="Читать комментарии" class="tm-article-comments-counter-link tm-data-icons__item"><a href="https://habr.com/ru/company/moonmodule/blog/576404/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      49
+    </span></a><a href="https://habr.com/ru/company/moonmodule/blog/576404/comments/" class="tm-article-comments-counter-link__link"><span title="Читать новые комментарии" class="tm-article-comments-counter-link__unread-counter">
+      +49
+    </span></a></div><!----><div class="v-portal" style="display:none;"></div></div></article></li><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-block tm-article-snippet-block-block_preview"><div class="tm-article-snippet-block__user-meta"><div class="tm-article-snippet-block__date"><time datetime="2021-09-06T09:00:02.000Z" title="2021-09-06, 14:00">вчера в 14:00</time></div></div><h2 class="tm-article-title tm-article-title_block"><a href="https://habr.com/ru/company/ruvds/blog/575326/" class="tm-article-title__link"><span>Где сейчас экспонаты Политехнического музея?</span></a></h2><div class="tm-data-icons"><!----><div class="tm-votes-meter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_small"><title>Всего голосов 46: ↑46 и ↓0</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-rating"></use></svg><span title="Всего голосов 46: ↑46 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_small">+46</span></div><span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">2.5K</span></span><button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-favorite"></use></svg></span><span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    22
+  </span></button><div title="Читать комментарии" class="tm-article-comments-counter-link tm-data-icons__item"><a href="https://habr.com/ru/company/ruvds/blog/575326/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      18
+    </span></a><a href="https://habr.com/ru/company/ruvds/blog/575326/comments/" class="tm-article-comments-counter-link__link"><span title="Читать новые комментарии" class="tm-article-comments-counter-link__unread-counter">
+      +18
+    </span></a></div><!----><div class="v-portal" style="display:none;"></div></div></article></li><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-block tm-article-snippet-block-block_preview"><div class="tm-article-snippet-block__user-meta"><div class="tm-article-snippet-block__date"><time datetime="2021-09-06T01:00:01.000Z" title="2021-09-06, 06:00">вчера в 06:00</time></div></div><h2 class="tm-article-title tm-article-title_block"><a href="https://habr.com/ru/company/dcmiran/blog/576290/" class="tm-article-title__link"><span>Главной угрозой для общества стали компании, которые «защищают безопасность»</span></a></h2><div class="tm-data-icons"><!----><div class="tm-votes-meter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_small"><title>Всего голосов 62: ↑50 и ↓12</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-rating"></use></svg><span title="Всего голосов 62: ↑50 и ↓12" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_small">+38</span></div><span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">21K</span></span><button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-favorite"></use></svg></span><span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    37
+  </span></button><div title="Читать комментарии" class="tm-article-comments-counter-link tm-data-icons__item"><a href="https://habr.com/ru/company/dcmiran/blog/576290/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      87
+    </span></a><a href="https://habr.com/ru/company/dcmiran/blog/576290/comments/" class="tm-article-comments-counter-link__link"><span title="Читать новые комментарии" class="tm-article-comments-counter-link__unread-counter">
+      +87
+    </span></a></div><!----><div class="v-portal" style="display:none;"></div></div></article></li><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-block tm-article-snippet-block-block_preview"><div class="tm-article-snippet-block__user-meta"><div class="tm-article-snippet-block__date"><time datetime="2021-09-05T14:00:01.000Z" title="2021-09-05, 19:00">5  сентября   в 19:00</time></div></div><h2 class="tm-article-title tm-article-title_block"><a href="https://habr.com/ru/company/ruvds/blog/575346/" class="tm-article-title__link"><span>Сборка собственного RPM-пакета, содержащего простую Go-программу</span></a></h2><div class="tm-data-icons"><!----><div class="tm-votes-meter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_small"><title>Всего голосов 28: ↑27 и ↓1</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-rating"></use></svg><span title="Всего голосов 28: ↑27 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_small">+26</span></div><span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">3.6K</span></span><button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-favorite"></use></svg></span><span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    53
+  </span></button><div title="Читать комментарии" class="tm-article-comments-counter-link tm-data-icons__item"><a href="https://habr.com/ru/company/ruvds/blog/575346/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      2
+    </span></a><a href="https://habr.com/ru/company/ruvds/blog/575346/comments/" class="tm-article-comments-counter-link__link"><span title="Читать новые комментарии" class="tm-article-comments-counter-link__unread-counter">
+      +2
+    </span></a></div><!----><div class="v-portal" style="display:none;"></div></div></article></li><!----></ul></div><!----></section><!----><!----></div></div></div><div class="tm-page__sidebar"><div hl="ru" id="159389" class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_stick-top"><!----></div><div class="tm-sexy-sidebar tm-sexy-sidebar_stick-top" style="margin-top:0px;"><section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Читают сейчас</h2><!----></header><div class="tm-block__body"><ul class="tm-article-list-block__list"><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-sidebar tm-article-snippet-block-sidebar_preview"><!----><h2 class="tm-article-title tm-article-title_sidebar"><a href="https://habr.com/ru/post/576420/" class="tm-article-title__link"><span>Легенды и мифы процессора Эльбрус в примерах</span></a></h2><div class="tm-data-icons"><!----><!----><span class="tm-icon-counter tm-data-icons__item" title="Количество просмотров"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">21K</span></span><!----><div class="tm-article-comments-counter-link tm-data-icons__item" title="Читать комментарии"><a href="https://habr.com/ru/post/576420/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      138
+    </span></a><a href="https://habr.com/ru/post/576420/comments/" class="tm-article-comments-counter-link__link"><span title="Читать новые комментарии" class="tm-article-comments-counter-link__unread-counter">
+      +138
+    </span></a></div><!----><div class="v-portal" style="display: none;"></div></div></article></li><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-sidebar tm-article-snippet-block-sidebar_preview"><!----><h2 class="tm-article-title tm-article-title_sidebar"><a href="https://habr.com/ru/company/dcmiran/blog/576290/" class="tm-article-title__link"><span>Главной угрозой для общества стали компании, которые «защищают безопасность»</span></a></h2><div class="tm-data-icons"><!----><!----><span class="tm-icon-counter tm-data-icons__item" title="Количество просмотров"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">21K</span></span><!----><div class="tm-article-comments-counter-link tm-data-icons__item" title="Читать комментарии"><a href="https://habr.com/ru/company/dcmiran/blog/576290/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      87
+    </span></a><a href="https://habr.com/ru/company/dcmiran/blog/576290/comments/" class="tm-article-comments-counter-link__link"><span title="Читать новые комментарии" class="tm-article-comments-counter-link__unread-counter">
+      +87
+    </span></a></div><!----><div class="v-portal" style="display: none;"></div></div></article></li><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-sidebar tm-article-snippet-block-sidebar_preview"><!----><h2 class="tm-article-title tm-article-title_sidebar"><a href="https://habr.com/ru/company/selectel/blog/576482/" class="tm-article-title__link"><span>Насколько все плохо с информационной безопасностью в мире? (Спойлер: очень и очень)</span></a></h2><div class="tm-data-icons"><!----><!----><span class="tm-icon-counter tm-data-icons__item" title="Количество просмотров"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">2.6K</span></span><!----><div class="tm-article-comments-counter-link tm-data-icons__item" title="Читать комментарии"><a href="https://habr.com/ru/company/selectel/blog/576482/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      4
+    </span></a><a href="https://habr.com/ru/company/selectel/blog/576482/comments/" class="tm-article-comments-counter-link__link"><span title="Читать новые комментарии" class="tm-article-comments-counter-link__unread-counter">
+      +4
+    </span></a></div><!----><div class="v-portal" style="display: none;"></div></div></article></li><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-sidebar tm-article-snippet-block-sidebar_preview"><!----><h2 class="tm-article-title tm-article-title_sidebar"><a href="https://habr.com/ru/post/576390/" class="tm-article-title__link"><span>Как я получил 4 оффера в FAANG в Европе или из Воронежа в Лондон</span></a></h2><div class="tm-data-icons"><!----><!----><span class="tm-icon-counter tm-data-icons__item" title="Количество просмотров"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">7.2K</span></span><!----><div class="tm-article-comments-counter-link tm-data-icons__item" title="Читать комментарии"><a href="https://habr.com/ru/post/576390/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      23
+    </span></a><a href="https://habr.com/ru/post/576390/comments/" class="tm-article-comments-counter-link__link"><span title="Читать новые комментарии" class="tm-article-comments-counter-link__unread-counter">
+      +23
+    </span></a></div><!----><div class="v-portal" style="display: none;"></div></div></article></li><li class="tm-article-list-block__item"><article class="tm-article-snippet-block-sidebar tm-article-snippet-block-sidebar_preview"><!----><h2 class="tm-article-title tm-article-title_sidebar"><a href="https://habr.com/ru/news/t/576478/" class="tm-article-title__link"><span>Аналитики назвали число россиян с зарплатой более 1 млн рублей в месяц</span></a></h2><div class="tm-data-icons"><!----><!----><span class="tm-icon-counter tm-data-icons__item" title="Количество просмотров"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-views"></use></svg><span class="tm-icon-counter__value">2.9K</span></span><!----><div class="tm-article-comments-counter-link tm-data-icons__item" title="Читать комментарии"><a href="https://habr.com/ru/news/t/576478/comments/" class="tm-article-comments-counter-link__link"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon"><title>Комментарии</title><use xlink:href="/img/megazord-v24.cee85629.svg#counter-comments"></use></svg><span class="tm-article-comments-counter-link__value">
+      10
+    </span></a><a href="https://habr.com/ru/news/t/576478/comments/" class="tm-article-comments-counter-link__link"><span title="Читать новые комментарии" class="tm-article-comments-counter-link__unread-counter">
+      +10
+    </span></a></div><!----><div class="v-portal" style="display: none;"></div></div></article></li><li class="tm-article-list-block__item"><a href="https://u.habr.com/citymob_chitayut" class="tm-most-reading-block__promo-post">Что по тестам, ребят? Ситимобил рассказывает, как проверить switchback-тест</a><div class="tm-most-reading-block__label">Турбо</div></li></ul></div><!----></section></div></div></div></div></div></div></main><!----></div><div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3><div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/users/Notevil/posts/" class="footer-menu__item-link">
+                Профиль
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/tracker/" class="footer-menu__item-link">
+                Трекер
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/conversations/" class="footer-menu__item-link">
+                Диалоги
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/auth/settings/profile/" class="footer-menu__item-link">
+                Настройки
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/ppa/" class="footer-menu__item-link">
+                ППА
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3><div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3><div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3><div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habr.com/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div><div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----><div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title><use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title><use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title><use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title><use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title><use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title><use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div><div class="v-portal" style="display:none;"></div><button class="tm-footer__link"><!---->
+        Настройка языка
+      </button><a href="https://habr.com/ru/about" class="tm-footer__link">
+        О сайте
+      </a><a href="https://habr.com/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a><!----><a href="https://habr.com/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a><div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span><span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div><!----><!----></div><div class="vue-portal-target"><!----></div></div>
+
+<script src="test_files/chunk-vendors.js" defer="defer"></script><script src="test_files/chunk-f458c7c4.js" defer="defer"></script><script src="test_files/app.js" defer="defer"></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript">
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+
+
+<div><div><div class="Vue-Toastification__container top-left"></div></div><div><div class="Vue-Toastification__container top-center"></div></div><div><div class="Vue-Toastification__container top-right"></div></div><div><div class="Vue-Toastification__container bottom-left"></div></div><div><div class="Vue-Toastification__container bottom-center"></div></div><div><div class="Vue-Toastification__container bottom-right"></div></div></div><div id="K9Jn4i4Yhz" style="display: none;"></div></body></html>
